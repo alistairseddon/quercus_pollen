@@ -29,13 +29,14 @@ import_chromatogram_manual <- function(.filename){
 
 
 ###########################
-# Plot a chromatogram using ggplot using a MALDIquant object
+# Plot a chromatogram using ggplot
 plot_chromatogram_gg <-function(.x = chromatograms, facet= FALSE) {
   # .x is a chromatograms tibble with nested time and intensity columns
   p <- .x %>% 
-    unnest(cols = c(time, intensity)) %>% 
+    unnest(cols = c(time, intensity, SG)) %>% 
     ggplot(aes(x = time, y = intensity, groups = pollen.code)) +
     geom_line(aes(col = pollen.code)) +
+    geom_line(aes(x = time, y = SG), col = "black") +
     xlab("Time (minutes)") +
     ylab("Intensity (m/z)") +
     theme_bw()
@@ -50,5 +51,11 @@ plot_chromatogram_gg <-function(.x = chromatograms, facet= FALSE) {
 
 
 ######
-
+baseline.gam <- function(.x = for_baseline_correction$time, .y = for_baseline_correction$SG){
+  SG <- .y
+  time <- .x
+  bs_fit <- bam(SG ~ s(time), family = Gamma()) 
+  # plot(bs_fit, resid = TRUE)
+  predict(bs_fit, type = "response")
+}
 

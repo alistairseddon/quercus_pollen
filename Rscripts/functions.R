@@ -30,14 +30,22 @@ import_chromatogram_manual <- function(.filename){
 
 ###########################
 # Plot a chromatogram using ggplot using a MALDIquant object
-plot_chromatogram_gg <-function(.x, .y) {
-  
-  data.frame(Time = .x, Intensity = .x)    %>% 
-    ggplot(aes( x = Time, y = Intensity)) +
-    geom_line() +
+plot_chromatogram_gg <-function(.x = chromatograms, facet= FALSE) {
+  # .x is a chromatograms tibble with nested time and intensity columns
+  p <- .x %>% 
+    unnest(cols = c(time, intensity)) %>% 
+    ggplot(aes(x = time, y = intensity, groups = pollen.code)) +
+    geom_line(aes(col = pollen.code)) +
     xlab("Time (minutes)") +
     ylab("Intensity (m/z)") +
     theme_bw()
+
+    if(facet == TRUE) {
+      p <- p +  
+        facet_wrap(vars(pollen.code), dir = "v") +
+        theme(legend.position = "none")
+    }
+ p 
 }
 
 

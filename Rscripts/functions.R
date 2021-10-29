@@ -30,9 +30,9 @@ import_chromatogram_manual <- function(.filename){
 
 ###########################
 # Plot a chromatogram using ggplot using a MALDIquant object
-plot_chromatogram_gg <-function(.x) {
+plot_chromatogram_gg <-function(.x, .y) {
   
-  data.frame(Time = mass(.x), Intensity = intensity(.x))    %>% 
+  data.frame(Time = .x, Intensity = .x)    %>% 
     ggplot(aes( x = Time, y = Intensity)) +
     geom_line() +
     xlab("Time (minutes)") +

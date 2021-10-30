@@ -5,7 +5,9 @@ import_chromatogram_manual <- function(.filename){
   raw_chromatogram <- suppressWarnings(read.csv(path, 
                                                 skip =2, 
                                                 row.names= NULL, 
-                                                col.names = c("Time", "Intensity") ) )
+                                                col.names = c("Time", "Intensity") ) ) %>%
+    as_tibble() %>% 
+    dplyr::filter(Time > 10 & Time < 30 )
   # NB. not sure why we are getting the warning here but it doesn't seem to matter
   
   # imports the meta data and extracts the two sample codes
@@ -61,12 +63,14 @@ plot_chromatogram_gg <-function(.x = chromatograms, facet= FALSE, baseline = FAL
 
 parse_chrom_MALDI <- function(.x = chromatograms[1,]$time[[1]], .y = chromatograms[1,]$intensity[[1]],
                               GC.code= chromatograms[1,]$GC.code,
-                              pollen.code = chromatograms[1,]$pollen.code){
+                              pollen.code = chromatograms[1,]$pollen.code,
+                              Tree = chromatograms[1,]$Tree){
   
   spectrum <- createMassSpectrum(mass = .x , 
                                  intensity = .y,
                                  metaData = list(GC.code = GC.code,
-                                                 pollen.code = pollen.code))
+                                                 pollen.code = pollen.code,
+                                                 Tree = Tree))
   spectrum
 }
 

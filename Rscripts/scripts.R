@@ -3,6 +3,7 @@ library("tidyverse")
 library("signal")
 library("mgcv")
 library("MALDIquant")
+library("vegan")
 
 
 source(here("Rscripts", "functions.R"))
@@ -16,20 +17,29 @@ data_log <- read_csv2(file = here("data", "GC-MS_log.csv" ))
 # Get Chromatogram Data
 chromatograms <- data_log %>% 
   mutate(chromatogram  = map(.x = Code, .f = import_chromatogram_manual)) %>% 
-  unnest(cols = c(chromatogram)) 
+  unnest(cols = c(chromatogram)) %>% 
+  dplyr::filter(Grains > 250) %>% 
+  group_by(Tree)
 
 que_1 <- plot_chromatogram_gg(.x = chromatograms, facet = FALSE)
-que_1 <- plot_chromatogram_gg(.x = chromatograms, facet = TRUE)
+que_2 <- plot_chromatogram_gg(.x = chromatograms, facet = TRUE)
 
+#############################
+# Standardise accoring to n grains
 
-
+chromatograms <- chromatograms %>% mutate(intensity = map2(.x = intensity, .y = Grains, 
+                                          .f = function(.x, .y ){
+                                            .x/.y
+                                          }))
+que_3 <- plot_chromatogram_gg(.x = chromatograms, facet = TRUE)
 #############################
 # add in the maldi objects as column in the tibble
 chromatograms <- chromatograms %>% 
   mutate(maldi = pmap(.l = list(.x = time,
                                 .y = intensity,
                                 GC.code = GC.code,
-                                pollen.code = pollen.code), 
+                                pollen.code = pollen.code,
+                                Tree = Tree), 
                       .f = parse_chrom_MALDI))
 
 # check working
@@ -53,8 +63,37 @@ plot(baseline_removed[[3]])
 # aligning chromatograms- does this do much?
 aligned_chromatograms <- alignSpectra(baseline_removed, halfWindowSize=20, 
                         SNR=2, tolerance=0.002, warpingMethod="lowess")
+sample_codes <- factor(sapply(aligned_chromatograms, function(x)metaData(x)$Tree))
 
-plot(aligned_chromatograms[[3]])
+#### average spectra
+avgSpectra <- averageMassSpectra(aligned_chromatograms, labels=sample_codes,  method="mean")
+peaks <- detectPeaks(avgSpectra, method="MAD", halfWindowSize=20, SNR=2)
+peaks <- binPeaks(peaks, tolerance=0.002)
+peaks <- filterPeaks(peaks, minFrequency=0.25)
+featureMatrix <- intensityMatrix(peaks, avgSpectra)
+rownames(featureMatrix) <- names(avgSpectra)
+
+#### raw samples
+peaks <- detectPeaks(aligned_chromatograms, method="MAD", halfWindowSize=20, SNR=2)
+peaks <- binPeaks(peaks, tolerance=0.002)
+peaks <- filterPeaks(peaks, minFrequency=0.25)
+featureMatrix <- intensityMatrix(peaks, aligned_chromatograms)
+
+
+princomp(t(featureMatrix))
+pca <- vegan::rda(featureMatrix)
+plot(pca)
+
+
+
+
+
+par(mfrow = c(3,1))
+plot(avgSpectra[[1]])
+plot(avgSpectra[[2]])
+plot(avgSpectra[[3]])
+
+
 
 
 

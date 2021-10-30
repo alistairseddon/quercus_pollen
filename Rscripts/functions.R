@@ -57,6 +57,27 @@ plot_chromatogram_gg <-function(.x = chromatograms, facet= FALSE, baseline = FAL
 }
 
 
+plot_avg_chromatogram_gg <-function(.x = chromatograms, facet= FALSE) {
+  # .x is a chromatograms tibble with nested time and intensity columns
+  p <- .x %>% 
+    unnest(cols = c(time, intensity)) %>% 
+    ggplot(aes(x = time, y = intensity, groups = species)) +
+    geom_line(aes(col = species)) +
+    xlab("Time (minutes)") +
+    ylab("Intensity (m/z)") +
+    theme_bw()
+  
+  if(facet == TRUE) {
+    p <- p +  
+      facet_wrap(vars(species), dir = "v") +
+      theme(legend.position = "none")
+  }
+  
+  p 
+}
+
+
+
 ### parse MALDI
 
 # parse to MALDIQUANT

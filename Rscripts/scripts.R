@@ -67,22 +67,59 @@ sample_codes <- factor(sapply(aligned_chromatograms, function(x)metaData(x)$Tree
 
 #### average spectra
 avgSpectra <- averageMassSpectra(aligned_chromatograms, labels=sample_codes,  method="mean")
-peaks <- detectPeaks(avgSpectra, method="MAD", halfWindowSize=20, SNR=2)
-peaks <- binPeaks(peaks, tolerance=0.002)
-peaks <- filterPeaks(peaks, minFrequency=0.25)
-featureMatrix <- intensityMatrix(peaks, avgSpectra)
-rownames(featureMatrix) <- names(avgSpectra)
+# peaks <- detectPeaks(avgSpectra, method="MAD", halfWindowSize=20, SNR=2)
+# peaks <- binPeaks(peaks, tolerance=0.002)
+# peaks <- filterPeaks(peaks, minFrequency=0.25)
+# featureMatrix <- intensityMatrix(peaks, avgSpectra)
+# rownames(featureMatrix) <- names(avgSpectra)
+avgChrom <- tibble(species = names(avgSpectra), time = map(avgSpectra, "mass"), intensity = map(avgSpectra, "intensity") )
+plot_avg_chromatogram_gg(avgChrom)
+plot_avg_chromatogram_gg(avgChrom, facet= TRUE)
 
-#### raw samples
+#### raw samples for PCA plot
 peaks <- detectPeaks(aligned_chromatograms, method="MAD", halfWindowSize=20, SNR=2)
 peaks <- binPeaks(peaks, tolerance=0.002)
 peaks <- filterPeaks(peaks, minFrequency=0.25)
 featureMatrix <- intensityMatrix(peaks, aligned_chromatograms)
 
+devtools::install_github("gavinsimpson/ggvegan")
 
-princomp(t(featureMatrix))
+library(ggvegan)
+
 pca <- vegan::rda(featureMatrix)
-plot(pca)
+str(summary(pca))
+
+pc1_importance <- round(summary(pca)$cont$importance[2,1]*100, 1)
+pc2_importance <- round(summary(pca)$cont$importance[2,2]*100, 1)
+
+autoplot(pca, layers = c("species", "sites", "biplot"), arrows= TRUE)
+pca_fort <- fortify(pca, display = "sites") %>% 
+  mutate(taxa =  chromatograms$Tree)
+
+ggplot(pca_fort, aes(x = PC1, y = PC2, colour = taxa, group = taxa)) +
+  #scale_color_viridis_d() +
+  coord_equal() +
+  theme_bw() +
+  geom_hline(linetype = "dashed", yintercept = 0,  col = "darkgrey") +
+  geom_vline(linetype = "dashed", xintercept = 0, col = "darkgrey") +
+  geom_point(show.legend = FALSE, size= 3) +
+  xlab(paste0("PC1 (", pc1_importance, "%)")) +
+  ylab(paste0("PC2 (", pc2_importance, "%)")) 
+
+
+pca_fort_species <- fortify(pca, display = "species") 
+
+PC1 <- arrange(pca_fort_species, desc(abs(PC1)))[1:12,]
+PC2 <- arrange(pca_fort_species, desc(abs(PC2)))[1:12,]
+
+
+
+
+
+
+
+
+
 
 
 

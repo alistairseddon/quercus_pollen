@@ -109,12 +109,22 @@ ggplot(pca_fort, aes(x = PC1, y = PC2, colour = taxa, group = taxa)) +
 
 pca_fort_species <- fortify(pca, display = "species") 
 
-PC1 <- arrange(pca_fort_species, desc(abs(PC1)))[1:12,]
-PC2 <- arrange(pca_fort_species, desc(abs(PC2)))[1:12,]
 
 
+PC1 <- arrange(pca_fort_species, desc(abs(PC1)))[1:20,] %>% 
+  mutate(Label = as.character(round(as.numeric(Label), 1))) 
+PC2 <- arrange(pca_fort_species, desc(abs(PC2)))[1:20,] %>% 
+  mutate(Label = as.character(round(as.numeric(Label), 1))) 
 
-
+library(cowplot)
+pc1_loadings <- ggplot(data=PC1, aes(x=Label, y=PC1)) +
+  geom_bar(stat="identity") + 
+  theme_bw()
+pc2_loadings <-ggplot(data=PC2, aes(x=Label, y=PC2)) +
+  geom_bar(stat="identity") +
+  theme_bw()
+loadings_plot <- plot_grid(pc1_loadings, pc2_loadings, labels = c('A', 'B'), 
+          label_size = 12, nrow= 2, ncol = 1)
 
 
 
